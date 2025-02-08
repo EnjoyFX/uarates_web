@@ -1,0 +1,24 @@
+# Python bytecode and cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment directories (adjust if you use a different folder name)
+env/
+venv/
+ENV/
+.venv/
+
+# Editor/IDE specific directories and files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Log, temporary, and backup files
+*.log
+*.tmp
+*.bak
+
+# Excel files
+*.xls*
