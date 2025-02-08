@@ -55,49 +55,59 @@
       </div>
     </div>
 
-    <!-- Підключення jQuery та Bootstrap JS -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Підключення Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-    $(document).ready(function() {
-        var timerInterval;
-        $('#generate-form').submit(function(e) {
+    document.addEventListener("DOMContentLoaded", function() {
+        var generateForm = document.getElementById("generate-form");
+        generateForm.addEventListener("submit", function(e) {
             e.preventDefault(); // Зупиняємо стандартну відправку форми
-            var formData = $(this).serialize();
 
-            // Скидаємо попередні дані у модальному вікні:
-            $('#loadingMessage').html("Файл генерується, будь ласка, зачекайте...");
-            $('#timer').text("0");
+            // Отримуємо дані форми
+            var formData = new FormData(generateForm);
 
-            // Показуємо модальне вікно
-            $('#loadingModal').modal('show');
+            // Скидаємо попередній вміст модального вікна
+            document.getElementById("loadingMessage").innerHTML = "Файл генерується, будь ласка, зачекайте...";
+            document.getElementById("timer").textContent = "0";
+
+            // Показуємо модальне вікно за допомогою Bootstrap Modal API
+            var loadingModalEl = document.getElementById("loadingModal");
+            var loadingModal = new bootstrap.Modal(loadingModalEl);
+            loadingModal.show();
+
             var seconds = 0;
-            $('#timer').text(seconds);
-            // Запускаємо лічильник часу (оновлюється кожну секунду)
-            timerInterval = setInterval(function() {
+            var timerInterval = setInterval(function() {
                 seconds++;
-                $('#timer').text(seconds);
+                document.getElementById("timer").textContent = seconds;
             }, 1000);
 
-            // Виконуємо AJAX-запит до маршруту /generate
-            $.ajax({
-                url: '/generate',
-                type: 'POST',
-                data: formData,
-                success: function(response) {
-                    clearInterval(timerInterval);
-                    if(response.status === 'success') {
-                        $('#loadingMessage').html("Файл згенеровано за " + response.time_taken + " секунд.<br>Ім'я файлу: " + response.file_name);
-                        // Додаємо кнопку для завантаження файлу
-                        $('#loadingMessage').append('<br><a href="/download?file_name=' + encodeURIComponent(response.file_name) + '" class="btn btn-success mt-3">Завантажити файл</a>');
-                    } else {
-                        $('#loadingMessage').text("Помилка: " + response.message);
-                    }
-                },
-                error: function(xhr, status, error) {
-                    clearInterval(timerInterval);
-                    $('#loadingMessage').text("Помилка: " + error);
+            // Виконуємо AJAX-запит до маршруту /generate за допомогою fetch API
+            fetch('/generate', {
+                method: 'POST',
+                body: formData
+            })
+            .then(function(response) {
+                if (!response.ok) {
+                    throw new Error("HTTP error " + response.status);
                 }
+                return response.json();
+            })
+            .then(function(data) {
+                clearInterval(timerInterval);
+                if (data.status === "success") {
+                    document.getElementById("loadingMessage").innerHTML =
+                        "Файл згенеровано за " + data.time_taken + " секунд.<br>Ім'я файлу: " + data.file_name;
+                    // Додаємо кнопку для завантаження файлу
+                    document.getElementById("loadingMessage").innerHTML +=
+                        '<br><a href="/download?file_name=' + encodeURIComponent(data.file_name) +
+                        '" class="btn btn-success mt-3">Завантажити файл</a>';
+                } else {
+                    document.getElementById("loadingMessage").textContent = "Помилка: " + data.message;
+                }
+            })
+            .catch(function(error) {
+                clearInterval(timerInterval);
+                document.getElementById("loadingMessage").textContent = "Помилка: " + error;
             });
         });
     });
