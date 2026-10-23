@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% if report %}{{ report.period.label }} · {% endif %}Курси валют НБУ</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232a78d6'/><text x='16' y='23' font-size='20' font-family='system-ui' font-weight='700' fill='white' text-anchor='middle'>%E2%82%B4</text></svg>">
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <a class="brand" href="{{ url_for('index') }}">
+      <span class="brand-mark" aria-hidden="true">₴</span>
+      <span>
+        <span class="brand-title">Курси валют НБУ</span>
+        <span class="brand-sub">Офіційні курси гривні за період</span>
+      </span>
+    </a>
+  </div>
+</header>
+
+<main class="wrap">
+  <form class="card query" method="get" action="{{ url_for('index') }}" id="query-form" novalidate>
+    <div class="query-grid">
+      <fieldset class="field field-period">
+        <legend class="label">Період</legend>
+        <div class="segmented">
+          {% for value, title in [("month", "Місяць"), ("quarter", "Квартал"), ("year", "Рік"), ("custom", "Довільний")] %}
+          <input type="radio" name="period" id="period-{{ value }}" value="{{ value }}"{% if form.period == value %} checked{% endif %}>
+          <label for="period-{{ value }}">{{ title }}</label>
+          {% endfor %}
+        </div>
+
+        <div class="period-fields">
+          <label class="control f-month f-quarter f-year">
+            <span class="control-label">Рік</span>
+            <select name="year">
+              {% for y in years %}<option value="{{ y }}"{% if y == form.year %} selected{% endif %}>{{ y }}</option>{% endfor %}
+            </select>
+          </label>
+          <label class="control f-month">
+            <span class="control-label">Місяць</span>
+            <select name="month">
+              {% for m in months %}<option value="{{ loop.index }}"{% if loop.index == form.month %} selected{% endif %}>{{ m }}</option>{% endfor %}
+            </select>
+          </label>
+          <label class="control f-quarter">
+            <span class="control-label">Квартал</span>
+            <select name="quarter">
+              {% for q in quarters %}<option value="{{ loop.index }}"{% if loop.index == form.quarter %} selected{% endif %}>{{ q }} квартал ({{ months[loop.index0 * 3][:3] | lower }}–{{ months[loop.index0 * 3 + 2][:3] | lower }})</option>{% endfor %}
+            </select>
+          </label>
+          <label class="control f-custom">
+            <span class="control-label">З</span>
+            <input type="date" name="start" value="{{ form.start }}" min="{{ hryvnia_day }}">
+          </label>
+          <label class="control f-custom">
+            <span class="control-label">По</span>
+            <input type="date" name="end" value="{{ form.end }}" min="{{ hryvnia_day }}">
+          </label>
+        </div>
+      </fieldset>
+
+      <div class="field field-currencies">
+        <label class="label" for="currencies-input">Валюти</label>
+        <input type="text" class="text-input" id="currencies-input" name="currencies" value="{{ form.currencies }}"
+               placeholder="USD, EUR" autocomplete="off" data-currency-input>
+        <div class="popular" data-popular hidden>
+          <span class="popular-label">Популярні:</span>
+          {% for code in popular %}
+          <button type="button" class="chip-btn" data-toggle-code="{{ code }}" aria-pressed="false">{{ code }}</button>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="query-actions">
+      <div class="presets" role="group" aria-label="Швидкий вибір періоду">
+        <span class="popular-label">Швидко:</span>
+        {% for p in presets %}
+        <button type="button" class="chip-btn" data-preset='{{ p | tojson }}'>{{ p.title }}</button>
+        {% endfor %}
+      </div>
+      <button type="submit" class="btn btn-primary" data-submit>
+        <span class="btn-spinner" aria-hidden="true"></span>
+        <span data-submit-label>Показати курси</span>
+      </button>
+    </div>
+  </form>
+
+  {% if error %}
+  <div class="alert alert-error" role="alert">
+    <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm-.75 4.5h1.5v5h-1.5v-5Zm0 6.5h1.5v1.5h-1.5V13Z"/></svg>
+    <span>{{ error }}</span>
+  </div>
+  {% endif %}
+
+  {% if report %}
+  <section class="results" aria-labelledby="results-title">
+    <header class="results-head">
+      <div>
+        <h1 id="results-title">{{ report.period.label }}</h1>
+        <p class="muted">
+          {{ report.period.start | date }} – {{ report.period.end | date }}
+          {% if report.dates %} · {{ report.dates | length }} дат з курсом{% endif %}
+          · офіційний курс НБУ, грн
+        </p>
+      </div>
+      {% if report.series %}
+      <div class="results-actions">
+        <a class="btn btn-secondary" href="{{ excel_url }}" title="Розділювач «;», десяткова кома — відкривається в Excel з українськими налаштуваннями">CSV для Excel</a>
+        <a class="btn btn-primary" href="{{ csv_url }}">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M9.25 3h1.5v8.19l2.72-2.72 1.06 1.06L10 14.06 5.47 9.53l1.06-1.06 2.72 2.72V3ZM4 15.5h12V17H4v-1.5Z"/></svg>
+          Завантажити CSV
+        </a>
+      </div>
+      {% endif %}
+    </header>
+
+    {% if report.missing %}
+    <div class="alert alert-warn" role="status">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2 1 18h18L10 2Zm-.75 5.5h1.5v5h-1.5v-5Zm0 6.5h1.5v1.5h-1.5V14Z"/></svg>
+      <span>Немає даних за цей період для: <strong>{{ report.missing | join(", ") }}</strong>. Перевірте код валюти або оберіть інший період.</span>
+    </div>
+    {% endif %}
+
+    {% if report.series %}
+    <div class="tiles">
+      {% for s in report.series %}
+      <article class="card tile">
+        <header class="tile-head">
+          <span class="tile-code">{{ s.code }}</span>
+          <span class="tile-name">{{ s.name }}{% if s.units != 1 %} · за {{ s.units }} од.{% endif %}</span>
+        </header>
+        <div class="tile-value">{{ s.last | rate }} <span class="tile-unit">грн</span></div>
+        <div class="tile-delta">
+          <span class="delta-arrow" aria-hidden="true">{% if s.change > 0 %}▲{% elif s.change < 0 %}▼{% else %}●{% endif %}</span>
+          {{ s.change | signed }} · {{ s.change_pct | signed(2, " %") }}
+          <span class="muted">з {{ s.dates[0] | date }}</span>
+        </div>
+        <div class="chart" data-chart="{{ loop.index0 }}" role="img"
+             aria-label="Динаміка курсу {{ s.code }}: від {{ s.first | rate }} до {{ s.last | rate }} грн"></div>
+        <div class="chart-axis" aria-hidden="true">
+          <span>{{ s.dates[0] | date }}</span><span>{{ s.dates[-1] | date }}</span>
+        </div>
+        <dl class="tile-stats">
+          <div><dt>Мінімум</dt><dd>{{ s.low | rate }}</dd><dd class="muted">{{ s.low_date | date }}</dd></div>
+          <div><dt>Середній</dt><dd>{{ s.avg | rate }}</dd><dd class="muted">за період</dd></div>
+          <div><dt>Максимум</dt><dd>{{ s.high | rate }}</dd><dd class="muted">{{ s.high_date | date }}</dd></div>
+        </dl>
+      </article>
+      {% endfor %}
+    </div>
+
+    <div class="card table-card">
+      <div class="table-head">
+        <h2>Курси за датами</h2>
+        <span class="muted">{{ report.rows | length }} рядків</span>
+      </div>
+      <div class="table-scroll">
+        <table class="rates">
+          <thead>
+            <tr>
+              <th scope="col">Дата</th>
+              {% for s in report.series %}<th scope="col" class="num">{{ s.code }}{% if s.units != 1 %} <span class="muted">/{{ s.units }}</span>{% endif %}</th>{% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for d, rates in report.rows %}
+            <tr>
+              <th scope="row">{{ d | date }}</th>
+              {% for r in rates %}<td class="num">{{ r | rate }}</td>{% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+  </section>
+  <script type="application/json" id="chart-data">{{ chart_data | tojson }}</script>
+  {% elif not error %}
+  <div class="empty card">
+    <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M6 38h36v3H6zM10 30l9-9 7 6 12-14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <p><strong>Оберіть період і валюти</strong></p>
+    <p class="muted">Покажемо динаміку, мінімум, максимум і таблицю курсів, яку можна завантажити в CSV.</p>
+  </div>
+  {% endif %}
+</main>
+
+<footer class="wrap footer muted">
+  Джерело даних — <a href="https://bank.gov.ua/ua/markets/exchangerates" target="_blank" rel="noopener">Національний банк України</a>.
+  Курси встановлюються щодня; на вихідні діє курс останнього робочого дня.
+</footer>
+
+<script type="application/json" id="currency-directory">{{ directory | tojson }}</script>
+<script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</body>
+</html>
