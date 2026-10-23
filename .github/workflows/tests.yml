@@ -23,13 +23,24 @@ jobs:
       - name: Run tests
         run: uv run pytest
 
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Run JS tests (static site)
+        run: npm test 2>&1 | tee js-tests.log  # bash в Actions запускається з pipefail
+
       # JSON для shields.io живе в окремій гілці badges, щоб не засмічувати історію main
       - name: Publish coverage badge
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          total=$(uv run coverage report --format=total)
+          # Бейдж показує гірше з двох покриттів: Python-застосунок і логіка статичного сайту
+          py=$(uv run coverage report --format=total)
+          # підсумковий рядок Node: "all files | 100.00 | …" (без терміналу підпис обрізається до "… files")
+          js=$(awk -F'|' '/files[[:space:]]*\|/ {v=int($2)} END {print v}' js-tests.log)
+          total=$(( py < js ? py : js ))
           if   [ "$total" -ge 90 ]; then color=brightgreen
           elif [ "$total" -ge 75 ]; then color=yellow
           else color=red; fi

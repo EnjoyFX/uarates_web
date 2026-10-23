@@ -9,3 +9,5 @@ docs
 .github
 .pytest_cache
 .coverage
+site
+package.json
