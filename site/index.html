@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Курси валют НБУ</title>
+  <meta name="description" content="Офіційні курси гривні НБУ за місяць, квартал, рік або довільний період: динаміка, мінімум, максимум, експорт у CSV.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232a78d6'/><text x='16' y='23' font-size='20' font-family='system-ui' font-weight='700' fill='white' text-anchor='middle'>%E2%82%B4</text></svg>">
+  <link rel="stylesheet" href="app.css">
+  <link rel="preconnect" href="https://enjoyfx.github.io" crossorigin>
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <a class="brand" href="./">
+      <span class="brand-mark" aria-hidden="true">₴</span>
+      <span>
+        <span class="brand-title">Курси валют НБУ</span>
+        <span class="brand-sub">Офіційні курси гривні за період</span>
+      </span>
+    </a>
+  </div>
+</header>
+
+<main class="wrap">
+  <noscript><div class="alert alert-error">Для роботи сторінки потрібен JavaScript.</div></noscript>
+
+  <form class="card query" method="get" action="./" id="query-form" novalidate>
+    <div class="query-grid">
+      <fieldset class="field field-period">
+        <legend class="label">Період</legend>
+        <div class="segmented">
+          <input type="radio" name="period" id="period-month" value="month" checked>
+          <label for="period-month">Місяць</label>
+          <input type="radio" name="period" id="period-quarter" value="quarter">
+          <label for="period-quarter">Квартал</label>
+          <input type="radio" name="period" id="period-year" value="year">
+          <label for="period-year">Рік</label>
+          <input type="radio" name="period" id="period-custom" value="custom">
+          <label for="period-custom">Довільний</label>
+        </div>
+
+        <div class="period-fields">
+          <label class="control f-month f-quarter f-year">
+            <span class="control-label">Рік</span>
+            <select name="year"></select>
+          </label>
+          <label class="control f-month">
+            <span class="control-label">Місяць</span>
+            <select name="month"></select>
+          </label>
+          <label class="control f-quarter">
+            <span class="control-label">Квартал</span>
+            <select name="quarter"></select>
+          </label>
+          <label class="control f-custom">
+            <span class="control-label">З</span>
+            <input type="date" name="start" min="1996-09-02">
+          </label>
+          <label class="control f-custom">
+            <span class="control-label">По</span>
+            <input type="date" name="end" min="1996-09-02">
+          </label>
+        </div>
+      </fieldset>
+
+      <div class="field field-currencies">
+        <label class="label" for="currencies-input">Валюти</label>
+        <input type="text" class="text-input" id="currencies-input" name="currencies" value="USD,EUR"
+               placeholder="USD, EUR" autocomplete="off" data-currency-input>
+        <div class="popular" data-popular hidden>
+          <span class="popular-label">Популярні:</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="query-actions">
+      <div class="presets" role="group" aria-label="Швидкий вибір періоду">
+        <span class="popular-label">Швидко:</span>
+      </div>
+      <button type="submit" class="btn btn-primary" data-submit>
+        <span class="btn-spinner" aria-hidden="true"></span>
+        <span data-submit-label>Показати курси</span>
+      </button>
+    </div>
+  </form>
+
+  <div id="output" aria-live="polite"></div>
+</main>
+
+<footer class="wrap footer muted">
+  Джерело даних — <a href="https://bank.gov.ua/ua/markets/exchangerates" target="_blank" rel="noopener">Національний банк України</a>,
+  через <a href="https://github.com/EnjoyFX/uarates_data" target="_blank" rel="noopener">відкриті дані uarates_data</a>.
+  Курси встановлюються щодня; на вихідні діє курс останнього робочого дня.
+</footer>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
